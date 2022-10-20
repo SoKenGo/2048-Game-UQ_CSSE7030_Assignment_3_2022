@@ -4,6 +4,7 @@
 import tkinter as tk
 import tkinter.messagebox as tkMessageBox
 from a3_support import *
+from tkinter.filedialog import askopenfilename, asksaveasfilename, askopenfile
 
 class Model:
 	def __init__(self) -> None:
@@ -39,6 +40,7 @@ class Model:
 		self.score = 0
 		self.undo_remained = 3
 		self.history = list()
+		self.undoable_move = list()
 		self.record()
 
 	def get_tiles(self) -> list[list[Optional[int]]]:
@@ -248,8 +250,8 @@ class StatusBar(tk.Frame):
 		score_title.pack()
 		self.score.pack()
 		#Pack the frames
-		frame_score.pack(side = tk.LEFT, padx=10, pady=5)
-		undo.pack(side = tk.LEFT, padx=40, pady=5)
+		frame_score.pack(side = tk.LEFT, padx=10)
+		undo.pack(side = tk.LEFT, padx=40)
 		#Create the buttons
 		self.reset_bot = tk.Button(button_list, text='New Game', bg='#f5ebe4', font=('Arial bold', 10))
 		self.undo_bot = tk.Button(button_list, text='Undo Move', bg='#f5ebe4', font=('Arial bold', 10))
@@ -299,17 +301,15 @@ class GameGrid(tk.Canvas):
 		self.column = self.data.column
 		self.space_size = 10
 		self.cell_size = 87.5
-		self.root = self.init_root(root)
+		self._root = self.init_root(root)
 		#Initialization for the canvas
 		super().__init__(
-			self.root,
+			self._root,
 			width = canvas_size,
 			height = canvas_size,
 			**kwargs,
 			bg = BACKGROUND_COLOUR
 		)
-		#Empty lists to hold the boxes and numbers to be displayed
-		self.boxes, self.labels = list(), list()
 		
 	def init_root(self, root:tk.Tk):
 		#Modify the attributes of the root
@@ -354,6 +354,7 @@ class GameGrid(tk.Canvas):
 		x = (x_min + x_max) // 2
 		y = (y_min + y_max) // 2
 		return x, y
+
 	#Unused function
 	def clear(self) -> None:
 		"""
@@ -384,11 +385,12 @@ class GameGrid(tk.Canvas):
 		box = self.create_rectangle(
 			x_min, y_min,
 			x_max, y_max,
+			#Fill the boxes with the colour according to number
 			fill=colour,
+			#Hide the outline
 			outline=colour,
 			width=1
 		)
-		self.boxes.append(box)
 		
 	def _draw_number(self, position: tuple[int, int], number: int) -> None:
 		"""
@@ -398,10 +400,10 @@ class GameGrid(tk.Canvas):
 		num = self.create_text(
 			x, y,
 			text=str(number),
+			#Use the given font
 			font=TILE_FONT,
 			fill=FG_COLOURS[number]
 		)
-		self.labels.append(num)
 		
 class Game():
 	"""
@@ -419,7 +421,6 @@ class Game():
 		"""
 		self.root = master
 		self.view = GameGrid(self.root)
-		
 		self.status = StatusBar(self.root)
 		#Add attributes to the StatusBar instance
 		self.status.config(padx=20, pady=20)
@@ -427,9 +428,25 @@ class Game():
 		self.status.set_callbacks(self.start_new_game, self.undo_previous_move)
 		#Using the same Model() data
 		self.data = self.view.data
+		#Create top-level menu
+		self.menu = tk.Menu(self.root)
+		#Second-level menu
+		file_menu = tk.Menu(self.menu)
+		#Append the labels
+		self.menu.add_cascade(menu = file_menu, label="File")
+		file_menu.add_command(label="Save game", command=self.save_as_file)
+		file_menu.add_command(label="Load game", command=self.load_from_file)
+		file_menu.add_command(label="New game", command=self.start_new_game)
+		file_menu.add_command(label="Quit", command=self.file_menu_quit)
+		#Add the file menu to the master
+		self.root.config(menu=self.menu)
 		self.view.pack()
+		self.saved_files = 0
 
 	def start_new_game(self):
+		"""
+		Start a new game
+		"""
 		self.data.new_game()
 		self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
 		self.view.redraw(self.data.get_tiles())
@@ -507,6 +524,45 @@ class Game():
 		self.draw()
         #Binding keyboard events
 		self.root.bind('<Key>', self.attempt_move)
+
+	def file_menu_quit(self) -> None:
+		"""
+		file_menu -> quit handler
+		"""
+		res = tkMessageBox.askyesno(title="2048", message="Are you sure you want to quit?")
+		if res:
+			self.root.destroy()
+		else:
+			return None
+	
+	def save_as_file(self) -> None:
+		self.saved_files += 1
+		files = [('All Files', '*.*'), ('text files', '*.txt')]
+		file_name = asksaveasfilename(filetypes = files, defaultextension = ".py")
+		#Handle the "Cancel"
+		if file_name:
+			f = open(file_name, "w")
+			f.write("%s=%s\n" %("self.data.matrix", self.data.get_tiles()))
+			f.write("%s=%s\n" %("self.data.score", self.data.get_score()))
+			f.write("%s=%s\n" %("self.data.undo_remained", self.data.get_undos_remaining()))
+			f.write("%s=%s\n" %("self.data.history", self.data.history))
+			f.write("%s=%s\n" %("self.data.undoable_move", self.data.undoable_move))
+			f.close()
+
+	def load_from_file(self) -> None:
+		f = askopenfile(mode ='r', filetypes =[('text files', '*.txt')])
+		#Handle the "Cancel"
+		if f:
+			self.data.matrix = eval(f.readline().split("=")[-1].strip())
+			self.data.score = int(f.readline().split("=")[-1].strip())
+			self.data.undo_remained = int(f.readline().split("=")[-1].strip())
+			self.data.history =eval(f.readline().split("=")[-1].strip())
+			self.data.undoable_move = eval(f.readline().split("=")[-1].strip())
+			#Resume the game
+			self.data.record()
+			self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
+			self.view.redraw(self.data.get_tiles())
+			f.close()
 
 def play_game(root):
 	game = Game(root)
