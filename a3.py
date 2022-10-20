@@ -11,13 +11,18 @@ class Model:
 		Constructs a new 2048 model instance. This includes setting up a new game (see new_game
 		method below).
 		"""
-		self.column = 4
+		self.column = 4#Designed for changing the size of the board
+		#Initialization of the board using list[list[int]] without using numpy
 		self.matrix = [[None for _ in range(self.column)] for _ in range(self.column)]
+		#2 new tiles randommly be created 
 		self.add_tile()
 		self.add_tile()
+		#A list for recording the history of the move
 		self.move = list()
 		self.score = 0
+		#Remaining undo chances
 		self.undo_times = 3
+		#Add first record
 		self.record()
 
 	def new_game(self) -> None:
@@ -71,6 +76,7 @@ class Model:
 		the matrix again. If you are keeping track of a score (see Task 2), this method should also
 		result in gained points being added to the total score.
 		"""
+		#reverse -> move left -> reverse
 		self.matrix = reverse(self.matrix)
 		self.move_left()
 		self.matrix = reverse(self.matrix)
@@ -82,6 +88,7 @@ class Model:
 		keeping track of a score (see Task 2), this method should also result in gained points being
 		added to the total score.
 		"""
+		#transpose -> move left -> transpose
 		self.matrix = transpose(self.matrix)
 		self.move_left()
 		self.matrix = transpose(self.matrix)
@@ -93,6 +100,7 @@ class Model:
 		are keeping track of a score (see Task 2), this method should also result in gained points
 		being added to the total score.
 		"""
+		#transpose -> move right -> transpose
 		self.matrix = transpose(self.matrix)
 		self.move_right()
 		self.matrix = transpose(self.matrix)
@@ -120,6 +128,7 @@ class Model:
 		Returns True if the game has been won, else False. The game has been won if a 2048 tile
 		exists on the grid.
 		"""
+		#Winning condition
 		if 2048 in [i for li in self.matrix for i in li]:
 			return True
 		return False
@@ -221,50 +230,47 @@ class StatusBar(tk.Frame):
 		and sets up inner frames, labels and buttons in this status bar.
 		"""
 		self.root = master
-		#footer = tk.Frame(master, padx=20, pady=10)
+		#Inherite from tk.Frame
 		footer = super().__init__(
 			self.root,
 			 **kwargs
-			# padx=0,
-			# pady=10
 			 )
-
-		# super().__init__(
-		# 	self.root,
-		# 	width = canvas_size,
-		# 	height = canvas_size,
-		# 	**kwargs,
-		# 	bg = BACKGROUND_COLOUR
-		# )
-
+		#frame for containing the score counter
 		frame = tk.Frame(footer, bg=BACKGROUND_COLOUR)
+		#undo for containning the remaining undos counter
 		undo = tk.Frame(footer, bg=BACKGROUND_COLOUR)
+		#Frame for the buttons
 		button_list = tk.Frame(footer)
+		#Title label
 		score_title = tk.Label(frame, fg=COLOURS[None], font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text= 'SCORE')
+		#Score label
 		self.score = tk.Label(frame, fg='white', font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text='0')
-
+		#Title label
 		undo_title = tk.Label(undo, fg=COLOURS[None], font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text= 'UNDOS')
+		#Undo label
 		self.remaining_undo = tk.Label(undo, fg='white', font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text='3')
-
+		#Pack the labels
 		undo_title.pack()
 		self.remaining_undo.pack()
-
 		score_title.pack()
 		self.score.pack()
+		#Pack the frames
 		frame.pack(side = tk.LEFT, padx=10, pady=5)
 		undo.pack(side = tk.LEFT, padx=40, pady=5)
+		#Create the buttons
 		self.reset_bot = tk.Button(button_list, text='New Game', bg='white', font=('Arial bold', 10))
 		self.undo_bot = tk.Button(button_list, text='Undo Move', bg='white', font=('Arial bold', 10))
+		#Pack the buttons
 		self.reset_bot.grid(row=1, padx=10, pady=3)
 		self.undo_bot.grid(row=2, padx=10, pady=3)
 		button_list.pack(side=tk.RIGHT)
-		#footer.pack(side=tk.BOTTOM, expand=False, fill=tk.X)
 
 	def redraw_infos(self, score: int, undos: int) -> None: 
 		"""
 		Updates the score and undos
 		labels to reflect the information given.
 		"""
+		#Change the text of counters
 		self.score.config(text=str(score))
 		self.score.update()
 		self.remaining_undo.config(text=str(undos))
@@ -276,6 +282,7 @@ class StatusBar(tk.Frame):
 		Sets the commands for the new game and undo buttons to the given commands. 
 		The arguments here are references to functions to be called when the buttons are pressed.
 		"""
+		#Set the callback reference
 		self.reset_bot.config(command=new_game_command)
 		self.undo_bot.config(command=undo_command)
 
@@ -299,7 +306,7 @@ class GameGrid(tk.Canvas):
 		self.space_size = 10
 		self.cell_size = 87.5
 		self.root = self.init_root(root)
-		#self.status = StatusBar(self.root)
+		#Initialization for the canvas
 		super().__init__(
 			self.root,
 			width = canvas_size,
@@ -307,47 +314,24 @@ class GameGrid(tk.Canvas):
 			**kwargs,
 			bg = BACKGROUND_COLOUR
 		)
+		#Empty lists to hold the boxes and numbers to be displayed
 		self.boxes, self.labels = list(), list()
 		
 	def init_root(self, root:tk.Tk):
+		#Modify the attributes of the root
 		root.title('CSSE1001/7030 2022 Semester 2 A3')
 		root.resizable(False, False)
 		header = tk.Frame(root)
 		self.init_header(header)
-		#self.init_footer(root)
 		return root
 
 	def init_header(self, master):
+		#Create the title label
 		master['bg'] = 'yellow'
 		header = tk.Label(master, fg= 'white', bg='yellow', font=TITLE_FONT, text='2048', compound='center')
 		header.pack(side = tk.TOP)
 		master.pack(side = tk.TOP, expand = False, fill = tk.X)
 
-	# def init_footer(self, master):
-	# 	footer = tk.Frame(master, padx=20, pady=10)
-	# 	frame = tk.Frame(footer, bg=BACKGROUND_COLOUR)
-	# 	undo = tk.Frame(footer, bg=BACKGROUND_COLOUR)
-	# 	button_list = tk.Frame(footer)
-	# 	score_title = tk.Label(frame, fg=COLOURS[None], font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text= 'SCORE')
-	# 	self.score = tk.Label(frame, fg='white', font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text=self.data.get_score())
-
-	# 	undo_title = tk.Label(undo, fg=COLOURS[None], font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text= 'UNDOS')
-	# 	self.remaining_undo = tk.Label(undo, fg='white', font=('Arial bold', 20), bg=BACKGROUND_COLOUR, compound='center', text=self.data.get_undos_remaining())
-
-	# 	undo_title.pack()
-	# 	self.remaining_undo.pack()
-
-	# 	score_title.pack()
-	# 	self.score.pack()
-	# 	frame.pack(side = tk.LEFT)
-	# 	undo.pack(side = tk.LEFT, padx=40)
-	# 	reset_bot = tk.Button(button_list, text='New Game', bg='white', font=('Arial bold', 10), command=self.clear)
-	# 	undo_bot = tk.Button(button_list, text='Undo Move', bg='white', font=('Arial bold', 10), command=self.undo)
-	# 	reset_bot.grid(row=1, padx=3, pady=3)
-	# 	undo_bot.grid(row=2, padx=3, pady=3)
-	# 	button_list.pack(side=tk.RIGHT)
-	# 	footer.pack(side=tk.BOTTOM, expand=False, fill=tk.X)
-		
 	def _get_bbox(self, position: tuple[int, int]) -> tuple[int, int, int, int]:
 		"""
 		Return the bounding box for the (row, column) position, in the form
@@ -356,6 +340,7 @@ class GameGrid(tk.Canvas):
 		added, and (x_max, y_ma[x) is the bottom right corner of the cell with 10 pixels of padding
 		subtracted.
 		"""
+		#Cordinations for each box
 		row = position[0]
 		col = position[1]
 		#NW corner
@@ -370,36 +355,17 @@ class GameGrid(tk.Canvas):
 		"""
 		Return the graphics coordinates for the center of the cell at the given (row, col) position.
 		"""
+		#Positions for the labels
 		x_min, y_min, x_max, y_max = self._get_bbox(position)
 		x = (x_min + x_max) // 2
 		y = (y_min + y_max) // 2
 		return x, y
-
+	#Unused function
 	def clear(self) -> None:
 		"""
 		Clears all items.
 		"""
-		#self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
-		self.redraw(self.data.get_tiles())
-	# 	self.data.new_game()
-	# 	# self.score.config(text=str(self.data.get_score()))
-	# 	# self.score.update()
-	# 	# self.remaining_undo.config(text=str(self.data.get_undos_remaining()))
-	# 	# self.remaining_undo.update()
-	# 	self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
-	# 	self.redraw(self.data.get_tiles())
-	
-	# def undo(self):
-	# 	if self.data.get_undos_remaining() == 3:
-	# 		self.data.move.pop()
-	# 	self.data.use_undo()
-	# 	self.score.config(text=str(self.data.get_score()))
-	# 	self.score.update()
-
-	# 	self.remaining_undo.config(text=str(self.data.get_undos_remaining()))
-	# 	self.remaining_undo.update()
-
-	# 	self.redraw(self.data.get_tiles())
+		pass
 
 	def redraw(self, tiles: list[list[Optional[int]]]) -> None:
 		"""
@@ -461,8 +427,11 @@ class Game():
 		self.view = GameGrid(self.root)
 		self.view.pack()
 		self.status = StatusBar(self.root)
+		#Add attributes to the StatusBar instance
 		self.status.config(padx=20, pady=20)
+		#Set the callback function
 		self.status.set_callbacks(self.start_new_game, self.undo_previous_move)
+		#Using the same Model() data
 		self.data = self.view.data
 
 	def start_new_game(self):
@@ -476,7 +445,6 @@ class Game():
 		self.data.use_undo()
 		self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
 		self.view.redraw(self.data.get_tiles())
-		#self.view.redraw(self.data.get_tiles())
 
 	def draw(self) -> None:
 		"""
@@ -492,19 +460,21 @@ class Game():
 		won.
 		"""
 		ans = self.data.attempt_move(event.keysym)
+		#Valid movement
 		if ans == True:	
 			self.new_tile()
-			#self.data.record()
 			self.draw()
 			self.status.redraw_infos(self.data.get_score(), self.data.get_undos_remaining())
 
 	def draw_tile(self):
+		#Only create new tile when there is a spare space
 		if None in [i for li in self.data.matrix for i in li]:
 			self.data.add_tile()
-			self.data.record()
 			self.draw()
+			#Judging win or lost
 			self.judge()
-			# self.data.record()
+			#Record the changes
+			self.data.record()
 
 	def new_tile(self) -> None: 
 		"""
@@ -512,17 +482,18 @@ class Game():
 		been lost with the addition of the new tile, then the player should be prompted with the
 		appropriate messagebox displaying the LOSS_MESSAGE.
 		"""
-		self.root.after(150, self.draw_tile)
-		# self.draw()		
+		#Add a delay on GUI
+		self.root.after(150, self.draw_tile)		
 
 	def reset(self) -> None:
 		self.data.new_game()
-		self.view.clear()
+		self.draw()
 
 	def judge(self):
 		if self.data.has_won() == True:
 			res = tkMessageBox.askyesno(title="2048", message=WIN_MESSAGE)
 			if res:
+				#Delete the items on background
 				self.view.delete('all')
 				self.reset()
 				self.view.redraw(self.data.get_tiles())
