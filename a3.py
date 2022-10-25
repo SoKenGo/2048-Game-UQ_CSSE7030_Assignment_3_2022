@@ -225,7 +225,7 @@ class StatusBar(tk.Frame):
 		"""
 		Sets up self to be an instance of tk.Frame
 		and sets up inner frames, labels and buttons in this status bar.
-		# """
+		"""
 		super().__init__(
 			master,
 			 **kwargs
@@ -426,7 +426,7 @@ class Game():
 		self.status.config(padx=20, pady=20)
 		#Set the callback function
 		self.status.set_callbacks(self.start_new_game, self.undo_previous_move)
-		#Using the same Model() data
+		#Use the same Model() data
 		self.data = self.view.data
 		#Create top-level menu
 		self.menu = tk.Menu(self.root)
